@@ -49,9 +49,11 @@ RUN mkdir -p /home/admin/.vnc && \
     chown -R admin:admin /home/admin/.vnc
 
 # ============================================
-# FIX XWRAPPER PERMISSIONS
+# ✅ FIX XWRAPPER (CREATE FILE IF MISSING)
 # ============================================
-RUN sed -i 's/allowed_users=console/allowed_users=anybody/g' /etc/X11/Xwrapper.config
+RUN mkdir -p /etc/X11 && \
+    touch /etc/X11/Xwrapper.config && \
+    echo "allowed_users=anybody" > /etc/X11/Xwrapper.config
 
 # ============================================
 # EXPOSE PORTS (VNC + NOVNC WEB)
