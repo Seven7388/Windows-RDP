@@ -59,6 +59,6 @@ RUN sed -i 's/allowed_users=console/allowed_users=anybody/g' /etc/X11/Xwrapper.c
 EXPOSE 5901 8080
 
 # ============================================
-# START VNC AND NOVNC
+# START VNC AND NOVNC WITH 1920x1080 RESOLUTION
 # ============================================
-CMD su - admin -c "vncserver :1 -geometry 1280x720 -depth 24 -localhost no && websockify -D --web=/usr/share/novnc/ 8080 localhost:5901 && tail -f /dev/null"
+CMD su - admin -c "vncserver :1 -geometry 1920x1080 -depth 24 -localhost no && websockify -D --web=/usr/share/novnc/ 8080 localhost:5901 && tail -f /dev/null"
