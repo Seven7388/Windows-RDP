@@ -1,66 +1,30 @@
 FROM ubuntu:22.04
 
-# ============================================
-# SILENCE ALL INTERACTIVE PROMPTS
-# ============================================
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
-RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
-    echo "America/New_York" > /etc/timezone
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && echo "America/New_York" > /etc/timezone
 
-# ============================================
-# INSTALL DESKTOP & VNC PACKAGES
-# ============================================
-RUN apt update -y && apt install --no-install-recommends -y \
+# We removed VNC/Websockify and installed XRDP instead. Kept all your tools!
+RUN dpkg --add-architecture i386 && apt update -y && \
+    apt install --no-install-recommends -y \
     xfce4 \
     xfce4-goodies \
-    tigervnc-standalone-server \
-    tigervnc-tools \
-    novnc \
-    websockify \
-    sudo \
-    wget \
-    curl \
-    firefox \
-    dbus-x11 \
-    x11-xserver-utils \
-    nano \
-    vim \
-    git \
-    net-tools \
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/*
+    xrdp \
+    sudo wget curl firefox dbus-x11 x11-xserver-utils nano vim git net-tools && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
-# ============================================
-# CREATE ADMIN USER
-# ============================================
+# Create Admin User
 RUN useradd -m -s /bin/bash admin && \
     echo "admin:7388" | chpasswd && \
     echo "admin ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# ============================================
-# SET UP VNC PASSWORD AND STARTUP SCRIPT
-# ============================================
-RUN mkdir -p /home/admin/.vnc && \
-    echo '#!/bin/bash\nxrdb $HOME/.Xresources\nstartxfce4 &' > /home/admin/.vnc/xstartup && \
-    chmod +x /home/admin/.vnc/xstartup && \
-    echo "7388" | vncpasswd -f > /home/admin/.vnc/passwd && \
-    chmod 600 /home/admin/.vnc/passwd && \
-    chown -R admin:admin /home/admin/.vnc
+# Tell XRDP to boot XFCE when you log in
+RUN echo "startxfce4" > /home/admin/.xsession && \
+    chown admin:admin /home/admin/.xsession && \
+    adduser xrdp ssl-cert
 
-# ============================================
-# ✅ FIX XWRAPPER (CREATE FILE IF MISSING)
-# ============================================
-RUN mkdir -p /etc/X11 && \
-    touch /etc/X11/Xwrapper.config && \
-    echo "allowed_users=anybody" > /etc/X11/Xwrapper.config
-
-# ============================================
-# EXPOSE PORTS (VNC + NOVNC WEB)
-# ============================================
+# Keep standard RDP port
 EXPOSE 3389
 
-# ============================================
-# START VNC AND NOVNC WITH 1920x1080 RESOLUTION
-# ============================================
-CMD su - admin -c "vncserver :1 -geometry 1920x1080 -depth 24 -localhost no && websockify -D --web=/usr/share/novnc/ 8080 localhost:5901 && tail -f /dev/null"
+# Start XRDP Manager
+CMD mkdir -p /var/run/xrdp && /usr/sbin/xrdp-sesman & /usr/sbin/xrdp -nodaemon
